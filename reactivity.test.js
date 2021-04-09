@@ -103,7 +103,37 @@ describe('watch', () => {
 });
 
 describe('reactive', () => {
-  it('can be used on arrays', async () => {
+  it('is triggered when a property gets deleted', async () => {
+    const reactiveObject = reactive({ foo: 'bar' });
+    const mock = createMock(() => reactiveObject.foo);
+    watch(mock);
+    expect(mock.callCount).toBe(1);
+    delete reactiveObject.foo;
+    await nextTick();
+    expect(mock.callCount).toBe(2);
+  });
+
+  it('is triggered when a new property gets added', async () => {
+    const reactiveObject = reactive({ foo: 'bar' });
+    const mock = createMock(() => reactiveObject.anotherProperty);
+    watch(mock);
+    expect(mock.callCount).toBe(1);
+    reactiveObject.anotherProperty = 1337;
+    await nextTick();
+    expect(mock.callCount).toBe(2);
+  });
+
+  it('is triggered for changes on nested properties', async () => {
+    const reactiveObject = reactive({ foo: 'bar' });
+    const mock = createMock(() => reactiveObject);
+    watch(mock);
+    expect(mock.callCount).toBe(1);
+    reactiveObject.foo = 1337;
+    await nextTick();
+    expect(mock.callCount).toBe(2);
+  });
+
+  it('can be used with arrays', async () => {
     const reactiveArray = reactive([1, 2, 3]);
     const mock = createMock(() => reactiveArray.join(', '));
     watch(mock);
@@ -128,17 +158,7 @@ describe('reactive', () => {
       nested: {
         key: 'value',
       },
-    })
-  });
-
-  it('is triggered when a property gets deleted', async () => {
-    const reactiveObject = reactive({ foo: 'bar' });
-    const mock = createMock(() => reactiveObject.foo);
-    watch(mock);
-    expect(mock.callCount).toBe(1);
-    delete reactiveObject.foo;
-    await nextTick();
-    expect(mock.callCount).toBe(2);
+    });
   });
 });
 
