@@ -3,7 +3,6 @@ const {
   reactive,
   ref,
   watch,
-  debounce,
   nextTick,
   computed,
   ReactivityErrors,
@@ -19,10 +18,9 @@ const createMock = (func = () => {}) => {
 };
 
 describe('watch', () => {
-  it('runs the watch function debounced once', async () => {
+  it('runs the watch function immediately once', async () => {
     const mock = createMock();
     watch(mock);
-    await nextTick();
     expect(mock.callCount).toBe(1);
     await nextTick();
     expect(mock.callCount).toBe(1);
@@ -51,7 +49,7 @@ describe('watch', () => {
     expect(() => { reactiveObject.foo += 1; }).toThrow(ReactivityErrors.RecursiveWatch);
   });
 
-  it('runs debounced once and then reruns the function whenever any of the dependencies change', async () => {
+  it('runs once and then reruns the function debounced whenever any of the dependencies change', async () => {
     const reactiveObject = reactive({ foo: 'bar' });
     const reactiveValue = ref(5);
 
@@ -61,13 +59,13 @@ describe('watch', () => {
       return true;
     });
     watch(mock);
-
-    await nextTick();
     expect(mock.callCount).toBe(1);
     reactiveObject.foo = 'bazz';
+    expect(mock.callCount).toBe(1);
     await nextTick();
     expect(mock.callCount).toBe(2);
     reactiveValue.value = 6;
+    expect(mock.callCount).toBe(2);
     await nextTick();
     expect(mock.callCount).toBe(3);
   });
@@ -81,7 +79,6 @@ describe('watch', () => {
     });
     const mock = createMock(() => reactiveObject.foo.one);
     watch(mock);
-    await nextTick();
     expect(mock.callCount).toBe(1);
     reactiveObject.foo.two = '3';
     await nextTick();
@@ -98,7 +95,6 @@ describe('watch', () => {
     });
     const mock = createMock(asyncFunction);
     watch(mock);
-    await nextTick();
     expect(mock.callCount).toBe(1);
     reactiveObject.foo = 'baz';
     await nextTick();
@@ -111,7 +107,6 @@ describe('reactive', () => {
     const reactiveArray = reactive([1, 2, 3]);
     const mock = createMock(() => reactiveArray.join(', '));
     watch(mock);
-    await nextTick();
     expect(mock.callCount).toBe(1);
     reactiveArray[1] = 4;
     await nextTick();
@@ -127,7 +122,6 @@ describe('reactive', () => {
       },
     });
     watch(() => reactiveObject.nested.key);
-    await nextTick();
     expect(JSON.parse(JSON.stringify(reactiveObject))).toStrictEqual({
       foo: [1, 2, 3],
       bar: 'baz',
@@ -136,21 +130,6 @@ describe('reactive', () => {
       },
     })
   })
-});
-
-describe('debounce', () => {
-  it('runs the function once at the start of the next event loop', async () => {
-    const mock = createMock();
-    const increaseCallCountDebounced = debounce(mock);
-    increaseCallCountDebounced();
-    await nextTick();
-    expect(mock.callCount).toBe(1);
-    increaseCallCountDebounced();
-    increaseCallCountDebounced();
-    increaseCallCountDebounced();
-    await nextTick();
-    expect(mock.callCount).toBe(2);
-  });
 });
 
 describe('computed', () => {

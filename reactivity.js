@@ -5,14 +5,6 @@ const ReactivityErrors = Object.freeze({
   ComputedAssignment: 'Don\'t assign a reactive value inside of a computed() function.',
 });
 
-const debounce = (func, wait = 0) => {
-  let timeout = null;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
 const nextTick = () => new Promise((resolve) => {
   setTimeout(resolve, 0);
 });
@@ -31,15 +23,6 @@ const watch = (fn, { async = true } = {}) => {
   const watcher = {
     callCount: 0,
     dependencies: new Set(),
-    callback: () => {
-      watcher.callCount += 1;
-      if (watcher.callCount > RECURSION_LIMIT) {
-        throw new Error(ReactivityErrors.RecursiveWatch);
-      }
-      effects.clear();
-      fn();
-      watcher.dependencies = new Set(effects);
-    },
   };
   const callback = () => {
     watcher.callCount += 1;
@@ -50,7 +33,9 @@ const watch = (fn, { async = true } = {}) => {
     fn();
     watcher.dependencies = new Set(effects);
   }
-  watcher.callback = async ? debounce(callback) : callback;
+  watcher.callback = async
+    ? () => { nextTick().then(callback); }
+    : callback;
   callback();
   watchers.push(watcher);
 };
@@ -104,7 +89,6 @@ module.exports = {
   reactive,
   ref,
   watch,
-  debounce,
   nextTick,
   computed,
   ReactivityErrors,
