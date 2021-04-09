@@ -1,7 +1,3 @@
-// https://dev.to/ycmjason/recreating-vue-3-reactivity-api-roughly-1o6a
-
-const { result } = require("lodash");
-
 const ReactivityErrors = Object.freeze({
   RecursiveWatch: 'Recursive updates detected. This is likely caused by a watcher that mutates its own depencies.',
 });
