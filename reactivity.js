@@ -13,36 +13,45 @@ const debounce = (func, wait = 0) => {
   };
 };
 
-const effects = new Set();
-
-const watchers = [];
-
 const nextTick = () => new Promise((resolve) => {
   setTimeout(resolve, 0);
 });
 
-// TODO: doesn't work with promises?
-// TODO: maybe we need to turn this around and give the reactive objects a watch method
-//      -> that would allow us to track the effects on a per-object basis?
+const effects = new Set();
+
+const watchers = [];
+
+const RECURSION_LIMIT = 100;
+
+setInterval(() => {
+  watchers.forEach((w) => { w.callCount = 0; });
+}, 0);
+
 const watch = (fn, { async = true } = {}) => {
   const watcher = {
+    callCount: 0,
     dependencies: new Set(),
-    isRunning: 0,
     callback: () => {
-      if (watcher.isRunning) {
+      watcher.callCount += 1;
+      if (watcher.callCount > RECURSION_LIMIT) {
         throw new Error(ReactivityErrors.RecursiveWatch);
       }
-      watcher.isRunning = true;
       effects.clear();
       fn();
       watcher.dependencies = new Set(effects);
-      watcher.isRunning = false;
     },
   };
-  if (async) {
-    watcher.callback = debounce(watcher.callback);
+  const callback = () => {
+    watcher.callCount += 1;
+    if (watcher.callCount > RECURSION_LIMIT) {
+      throw new Error(ReactivityErrors.RecursiveWatch);
+    }
+    effects.clear();
+    fn();
+    watcher.dependencies = new Set(effects);
   }
-  watcher.callback();
+  watcher.callback = async ? debounce(callback) : callback;
+  callback();
   watchers.push(watcher);
 };
 

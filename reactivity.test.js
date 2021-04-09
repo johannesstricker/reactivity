@@ -171,7 +171,6 @@ describe('computed', () => {
       bar.value = foo.value + bar.value;
       return bar.value;
     });
-    // expect(createComputedValue).toThrow(ReactivityErrors.ComputedAssignment);
     expect(() => { foo.value += 1; }).toThrow(ReactivityErrors.RecursiveWatch);
   });
 });
