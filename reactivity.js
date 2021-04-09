@@ -41,6 +41,7 @@ const watch = (fn, { async = true } = {}) => {
   registeredWatchers.push(watcher);
 };
 
+// TODO: automatically unwrap refs
 const reactiveProxyHandler = (symbolsForProperties) => {
   const getSymbol = (property) => {
     if (!symbolsForProperties.has(property)) {

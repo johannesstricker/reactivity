@@ -123,14 +123,14 @@ describe('reactive', () => {
     expect(mock.callCount).toBe(2);
   });
 
-  it('is triggered for changes on nested properties', async () => {
+  it('is NOT triggered for changes on nested properties that are not a direct dependency', async () => {
     const reactiveObject = reactive({ foo: 'bar' });
     const mock = createMock(() => reactiveObject);
     watch(mock);
     expect(mock.callCount).toBe(1);
     reactiveObject.foo = 1337;
     await nextTick();
-    expect(mock.callCount).toBe(2);
+    expect(mock.callCount).toBe(1);
   });
 
   it('can be used with arrays', async () => {
