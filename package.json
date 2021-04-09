@@ -1,0 +1,14 @@
+{
+  "name": "reactivity",
+  "version": "1.0.0",
+  "description": "Reactivity tools inspired by Vue",
+  "main": "reactivity.js",
+  "author": "Johannes Stricker <johannesstricker@gmx.net>",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^26.6.3"
+  },
+  "scripts": {
+    "test": "jest"
+  }
+}
