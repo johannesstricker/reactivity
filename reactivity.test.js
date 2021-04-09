@@ -90,6 +90,20 @@ describe('watch', () => {
     await nextTick();
     expect(mock.callCount).toBe(2);
   });
+
+  it('does not trigger the watcher when the dependency is called from inside an async function', async () => {
+    const reactiveObject = reactive({ foo: 'bar' });
+    const asyncFunction = () => new Promise((resolve) => {
+      setTimeout(() => resolve(reactiveObject.foo), 0);
+    });
+    const mock = createMock(asyncFunction);
+    watch(mock);
+    await nextTick();
+    expect(mock.callCount).toBe(1);
+    reactiveObject.foo = 'baz';
+    await nextTick();
+    expect(mock.callCount).toBe(1);
+  });
 });
 
 describe('reactive', () => {
