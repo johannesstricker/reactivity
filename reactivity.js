@@ -1,22 +1,23 @@
 // https://dev.to/ycmjason/recreating-vue-3-reactivity-api-roughly-1o6a
 
+const { result } = require("lodash");
+
 const ReactivityErrors = Object.freeze({
-  RecursiveWatch: 'Don\'t call watch() recursively.',
-  ComputedAssignment: 'Don\'t assign a reactive value inside of a computed() function.',
+  RecursiveWatch: 'Recursive updates detected. This is likely caused by a watcher that mutates its own depencies.',
 });
 
 const nextTick = () => new Promise((resolve) => {
   setTimeout(resolve, 0);
 });
 
-const effects = new Set();
+const currentDependencies = new Set();
 
-const watchers = [];
+const registeredWatchers = [];
 
 const RECURSION_LIMIT = 100;
 
 setInterval(() => {
-  watchers.forEach((w) => { w.callCount = 0; });
+  registeredWatchers.forEach((w) => { w.callCount = 0; });
 }, 0);
 
 const watch = (fn, { async = true } = {}) => {
@@ -29,15 +30,15 @@ const watch = (fn, { async = true } = {}) => {
     if (watcher.callCount > RECURSION_LIMIT) {
       throw new Error(ReactivityErrors.RecursiveWatch);
     }
-    effects.clear();
+    currentDependencies.clear();
     fn();
-    watcher.dependencies = new Set(effects);
+    watcher.dependencies = new Set(currentDependencies);
   }
   watcher.callback = async
     ? () => { nextTick().then(callback); }
     : callback;
   callback();
-  watchers.push(watcher);
+  registeredWatchers.push(watcher);
 };
 
 const reactiveProxyHandler = (symbolsForProperties) => {
@@ -51,7 +52,7 @@ const reactiveProxyHandler = (symbolsForProperties) => {
   return {
     get(target, property, receiver) {
       const symbol = getSymbol(property);
-      effects.add(symbol);
+      currentDependencies.add(symbol);
       const value = Reflect.get(target, property, receiver);
       if (value && typeof value === 'object') {
         return new Proxy(value, reactiveProxyHandler(symbolsForProperties));
@@ -61,13 +62,20 @@ const reactiveProxyHandler = (symbolsForProperties) => {
     set(target, property, value, receiver) {
       const symbol = getSymbol(property);
       const result = Reflect.set(target, property, value, receiver);
-      watchers
+      registeredWatchers
+        .filter(({ dependencies }) => dependencies.has(symbol))
+        .forEach(({ callback }) => callback());
+      return result;
+    },
+    deleteProperty(target, property) {
+      const symbol = getSymbol(property);
+      const result = Reflect.deleteProperty(target, property);
+      registeredWatchers
         .filter(({ dependencies }) => dependencies.has(symbol))
         .forEach(({ callback }) => callback());
       return result;
     },
   };
-  // TODO: implement delete
 };
 
 const reactive = (value) => {

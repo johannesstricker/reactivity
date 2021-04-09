@@ -129,7 +129,17 @@ describe('reactive', () => {
         key: 'value',
       },
     })
-  })
+  });
+
+  it('is triggered when a property gets deleted', async () => {
+    const reactiveObject = reactive({ foo: 'bar' });
+    const mock = createMock(() => reactiveObject.foo);
+    watch(mock);
+    expect(mock.callCount).toBe(1);
+    delete reactiveObject.foo;
+    await nextTick();
+    expect(mock.callCount).toBe(2);
+  });
 });
 
 describe('computed', () => {
