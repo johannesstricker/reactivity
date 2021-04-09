@@ -1,5 +1,7 @@
 # reactivity
 
+[![Tests](https://github.com/johannesstricker/reactivity/workflows/Testing/badge.svg)](https://github.com/johannesstricker/reactivity/actions)
+
 Reactivity tools inspired by Vue's reactivity system. I've created the library to support some smaller projects, to which I didn't want to add Vue.
 
 ## How to use
